@@ -273,7 +273,11 @@
       <div class="carregando">Carregando...</div>
     </div>
 
-    <a href="relatorio.html" class="cta">📊 Ver relatório completo</a>
+    <input type="file" id="inputArquivo" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" style="display:none;" />
+    <button id="btnEnviarArquivo" class="cta" style="border:none; width:100%; cursor:pointer;">📤 Enviar comprovante</button>
+    <p id="statusEnvio" style="text-align:center; font-size:13px; color:#555; margin-top:8px;"></p>
+
+    <a href="relatorio.html" class="cta" style="background:#fff; color:#0d6efd; border:1px solid #0d6efd; margin-top:10px;">📊 Ver relatório completo</a>
   </div>
 
   <script>
@@ -399,6 +403,43 @@
     btnNotificacao.addEventListener('click', async () => {
       await Notification.requestPermission();
       notifBar.style.display = 'none';
+    });
+
+    // --- Upload manual (alternativa enquanto o compartilhar tem bug no Chrome) ---
+    const inputArquivo = document.getElementById('inputArquivo');
+    const btnEnviarArquivo = document.getElementById('btnEnviarArquivo');
+    const statusEnvio = document.getElementById('statusEnvio');
+
+    btnEnviarArquivo.addEventListener('click', () => inputArquivo.click());
+
+    inputArquivo.addEventListener('change', async () => {
+      const arquivo = inputArquivo.files[0];
+      if (!arquivo) return;
+
+      btnEnviarArquivo.disabled = true;
+      btnEnviarArquivo.textContent = 'Enviando...';
+      statusEnvio.textContent = 'Lendo o comprovante, aguarde alguns segundos...';
+
+      try {
+        const formData = new FormData();
+        formData.append('comprovante', arquivo, arquivo.name);
+
+        const resposta = await fetch(WORKER_URL, { method: 'POST', body: formData });
+        const json = await resposta.json();
+
+        if (json.success) {
+          statusEnvio.textContent = '✅ Registrado: ' + json.data.descricao + ' — R$ ' + json.data.valor;
+          carregarHistorico();
+        } else {
+          statusEnvio.textContent = '❌ Erro: ' + (json.error || 'desconhecido');
+        }
+      } catch (err) {
+        statusEnvio.textContent = '❌ Erro de conexão: ' + err.message;
+      } finally {
+        btnEnviarArquivo.disabled = false;
+        btnEnviarArquivo.textContent = '📤 Enviar comprovante';
+        inputArquivo.value = '';
+      }
     });
 
     // --- Histórico ---
