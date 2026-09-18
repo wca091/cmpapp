@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recebido</title>
+  <style>
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      text-align: center;
+      padding: 64px 24px;
+      color: #1a1a1a;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .check {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 22px; color: #0d6efd; }
+    p { color: #555; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="check">📩</div>
+  <h1>Recebido!</h1>
+  <p>
+    Estamos processando o comprovante em segundo plano.
+    Você já pode fechar esta tela — vamos te avisar com uma
+    notificação assim que terminar.
+  </p>
+  <script>
+    // Fecha essa aba/tela automaticamente depois de 2 segundos,
+    // já que o usuário não precisa ficar olhando pra ela.
+    setTimeout(() => {
+      try { window.close(); } catch (e) {}
+    }, 2000);
+  </script>
+</body>
+</html>

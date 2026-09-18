@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comprovantes</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <meta name="theme-color" content="#0d6efd" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+      color: #1a1a1a;
+      background: #f4f6fa;
+      max-width: 480px;
+      margin-inline: auto;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #0d6efd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-desc {
+      font-size: 14px;
+      color: #1a1a1a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-data {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .card-valor {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cta {
+      display: block;
+      background: #0d6efd;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 16px;
+      text-decoration: none;
+    }
+    .vazio, .carregando, .erro {
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+      padding: 24px 0;
+    }
+    .notif-bar {
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #fff3cd;
+      color: #664d03;
+    }
+    .notif-bar button {
+      background: #664d03;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .section-label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 20px 0 8px;
+    }
+
+    /* --- Telas em tela cheia: instalar / perguntar nome / saudação --- */
+    #overlayInstalar,
+    #overlayNome,
+    #overlaySaudacao {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #0d6efd, #084298);
+      z-index: 999;
+      padding: 24px;
+      text-align: center;
+    }
+    .caixa-branca {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .caixa-branca .icone {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: #0d6efd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+    }
+    .caixa-branca h1 {
+      font-size: 20px;
+      margin: 0 0 8px;
+      color: #1a1a1a;
+    }
+    .caixa-branca p {
+      font-size: 14px;
+      color: #666;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    .caixa-branca input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .caixa-branca button {
+      width: 100%;
+      background: #0d6efd;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .caixa-branca button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .instrucao-manual {
+      text-align: left;
+      background: #f4f6fa;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #444;
+      margin-top: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+    .saudacao-conteudo {
+      color: #fff;
+      animation: entrada 0.4s ease-out both;
+    }
+    .saudacao-icone {
+      font-size: 52px;
+      margin-bottom: 16px;
+    }
+    #textoSaudacao {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.35;
+    }
+    @keyframes entrada {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #overlaySaudacao.saindo { opacity: 0; transition: opacity 0.3s ease; }
+
+    #conteudoApp { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA 1: instalar (só aparece se o app ainda não foi instalado) -->
+  <div id="overlayInstalar">
+    <div class="caixa-branca">
+      <div class="icone">📋</div>
+      <h1>Instale o Comprovantes</h1>
+      <p>Para ele aparecer na lista de compartilhamento do celular (igual WhatsApp, Gmail), instale o app na tela inicial.</p>
+      <button id="btnInstalarPrincipal" disabled>Preparando instalação...</button>
+      <div class="instrucao-manual" id="instrucaoAndroid">
+        Se o botão não funcionar, toque no menu <strong>⋮</strong> do Chrome e escolha <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
+      </div>
+      <div class="instrucao-manual" id="instrucaoIOS">
+        No iPhone: toque no ícone de <strong>Compartilhar</strong> na barra do Safari e escolha <strong>"Adicionar à Tela de Início"</strong>.
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA 2: perguntar o nome (só na primeira vez, já instalado) -->
+  <div id="overlayNome">
+    <div class="caixa-branca">
+      <div class="icone">📋</div>
+      <h1>Bem-vindo(a) ao Comprovantes!</h1>
+      <p>Como podemos te chamar?</p>
+      <input type="text" id="inputNome" placeholder="Seu nome" />
+      <button id="btnComecar">Começar</button>
+    </div>
+  </div>
+
+  <!-- TELA 3: saudação rápida (aparece toda vez que reabre o app, some sozinha) -->
+  <div id="overlaySaudacao">
+    <div class="saudacao-conteudo">
+      <div class="saudacao-icone">👋</div>
+      <h1 id="textoSaudacao"></h1>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO NORMAL DO APP -->
+  <div id="conteudoApp">
+    <div class="header">
+      <div class="header-icon">📋</div>
+      <p class="header-title">Comprovantes</p>
+    </div>
+
+    <div class="notif-bar" id="notifBar">
+      <span>Ative notificações pra saber quando terminar</span>
+      <button id="btnNotificacao">Ativar</button>
+    </div>
+
+    <div class="section-label">Últimos comprovantes</div>
+    <div id="listaHistorico">
+      <div class="carregando">Carregando...</div>
+    </div>
+
+    <a href="relatorio.html" class="cta">📊 Ver relatório completo</a>
+  </div>
+
+  <script>
+    const WORKER_URL = 'https://comprovantes-worker.williamamorim126.workers.dev/';
+    const CHAVE_NOME = 'comprovantes_nome_usuario';
+    const CHAVE_SESSAO = 'comprovantes_saudou_sessao';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('service-worker.js')
+        .catch((err) => console.error('Erro ao registrar service worker', err));
+    }
+
+    // --- Referências das telas ---
+    const overlayInstalar = document.getElementById('overlayInstalar');
+    const overlayNome = document.getElementById('overlayNome');
+    const overlaySaudacao = document.getElementById('overlaySaudacao');
+    const conteudoApp = document.getElementById('conteudoApp');
+
+    function mostrarTela(nome) {
+      overlayInstalar.style.display = nome === 'instalar' ? 'flex' : 'none';
+      overlayNome.style.display = nome === 'nome' ? 'flex' : 'none';
+      overlaySaudacao.style.display = nome === 'saudacao' ? 'flex' : 'none';
+      conteudoApp.style.display = nome === 'app' ? 'block' : 'none';
+    }
+
+    function appEstaInstalado() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function ehIOS() {
+      return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    }
+
+    // --- TELA 1: instalação ---
+    let deferredPrompt;
+    const btnInstalarPrincipal = document.getElementById('btnInstalarPrincipal');
+    const instrucaoAndroid = document.getElementById('instrucaoAndroid');
+    const instrucaoIOS = document.getElementById('instrucaoIOS');
+
+    if (ehIOS()) {
+      btnInstalarPrincipal.style.display = 'none';
+      instrucaoIOS.style.display = 'block';
+    } else {
+      instrucaoAndroid.style.display = 'block';
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btnInstalarPrincipal.disabled = false;
+      btnInstalarPrincipal.textContent = 'Instalar agora';
+    });
+
+    btnInstalarPrincipal.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      overlayInstalar.querySelector('.caixa-branca').innerHTML =
+        '<div class="icone">✅</div><h1>Instalado!</h1><p>Agora abra o app pelo ícone "Comprovantes" na tela inicial do celular.</p>';
+    });
+
+    // --- TELA 2: perguntar nome ---
+    const inputNome = document.getElementById('inputNome');
+    const btnComecar = document.getElementById('btnComecar');
+
+    function concluirNome() {
+      const nome = inputNome.value.trim();
+      if (!nome) {
+        inputNome.focus();
+        return;
+      }
+      localStorage.setItem(CHAVE_NOME, nome);
+      mostrarSaudacao(nome, true);
+    }
+
+    btnComecar.addEventListener('click', concluirNome);
+    inputNome.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') concluirNome();
+    });
+
+    // --- TELA 3: saudação (dura 3 segundos) ---
+    const textoSaudacao = document.getElementById('textoSaudacao');
+
+    function mostrarSaudacao(nome, primeiraVez) {
+      textoSaudacao.textContent = primeiraVez ? 'Bem-vindo(a), ' + nome + '!' : 'Bem-vindo(a) novamente, ' + nome + '!';
+      overlaySaudacao.classList.remove('saindo');
+      mostrarTela('saudacao');
+      sessionStorage.setItem(CHAVE_SESSAO, '1');
+      setTimeout(() => {
+        overlaySaudacao.classList.add('saindo');
+        setTimeout(() => {
+          mostrarTela('app');
+          overlaySaudacao.classList.remove('saindo');
+        }, 300);
+      }, 3000);
+    }
+
+    // --- Decide qual tela mostrar ao abrir ---
+    const nomeSalvo = localStorage.getItem(CHAVE_NOME);
+    const jaSaudouNestaSessao = sessionStorage.getItem(CHAVE_SESSAO) === '1';
+
+    if (!appEstaInstalado()) {
+      mostrarTela('instalar');
+    } else if (!nomeSalvo) {
+      mostrarTela('nome');
+    } else if (jaSaudouNestaSessao) {
+      // Já viu a saudação nesta sessão (ex: voltou do relatório) — vai direto pro app.
+      mostrarTela('app');
+    } else {
+      mostrarSaudacao(nomeSalvo, false);
+    }
+
+    // --- Notificações ---
+    const notifBar = document.getElementById('notifBar');
+    const btnNotificacao = document.getElementById('btnNotificacao');
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      notifBar.style.display = 'flex';
+    }
+
+    btnNotificacao.addEventListener('click', async () => {
+      await Notification.requestPermission();
+      notifBar.style.display = 'none';
+    });
+
+    // --- Histórico ---
+    function formatarValorExibicao(valor) {
+      const texto = String(valor || '').trim();
+      return texto.startsWith('R$') ? texto : 'R$ ' + texto;
+    }
+
+    async function carregarHistorico() {
+      const container = document.getElementById('listaHistorico');
+      try {
+        const resposta = await fetch(WORKER_URL + 'ultimos');
+        const json = await resposta.json();
+
+        if (!json.success || !json.dados || json.dados.length === 0) {
+          container.innerHTML = '<div class="vazio">Nenhum comprovante enviado ainda</div>';
+          return;
+        }
+
+        container.innerHTML = json.dados
+          .map(
+            (item) => `
+          <div class="card">
+            <div style="min-width:0;">
+              <div class="card-desc">${escapeHtml(item.descricao)}</div>
+              <div class="card-data">${escapeHtml(item.data)}</div>
+            </div>
+            <div class="card-valor">${escapeHtml(formatarValorExibicao(item.valor))}</div>
+          </div>
+        `
+          )
+          .join('');
+      } catch (err) {
+        container.innerHTML = '<div class="erro">Não foi possível carregar o histórico</div>';
+      }
+    }
+
+    function escapeHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    carregarHistorico();
+  </script>
+</body>
+</html>

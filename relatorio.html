@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório — Comprovantes</title>
+  <link rel="icon" href="icon-192.png" />
+  <meta name="theme-color" content="#0d6efd" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+      color: #1a1a1a;
+      background: #f4f6fa;
+      max-width: 480px;
+      margin-inline: auto;
+      padding-bottom: 48px;
+    }
+    .topo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .voltar {
+      text-decoration: none;
+      color: #0d6efd;
+      font-size: 20px;
+      line-height: 1;
+    }
+    .titulo {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .resumo {
+      background: #0d6efd;
+      border-radius: 14px;
+      padding: 20px;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .resumo-label {
+      font-size: 13px;
+      opacity: 0.85;
+    }
+    .resumo-valor {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .mes-titulo {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 22px 0 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 13px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-desc {
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-data {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .card-valor {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .carregando, .erro, .vazio {
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+      padding: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="topo">
+    <a href="index.html" class="voltar">←</a>
+    <p class="titulo">Relatório completo</p>
+  </div>
+
+  <div class="resumo">
+    <div class="resumo-label">Total lançado</div>
+    <div class="resumo-valor" id="totalGeral">—</div>
+  </div>
+
+  <div id="conteudo">
+    <div class="carregando">Carregando lançamentos...</div>
+  </div>
+
+  <script>
+    const WORKER_URL = 'https://comprovantes-worker.williamamorim126.workers.dev/';
+
+    const MESES = [
+      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+    ];
+
+    function parseValor(texto) {
+      const limpo = String(texto || '0').replace(/[^\d,.-]/g, '');
+      return parseFloat(limpo.replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
+    function formatarValor(numero) {
+      return 'R$ ' + numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function parseData(texto) {
+      const partes = String(texto || '').split('/');
+      if (partes.length !== 3) return null;
+      const [dia, mes, ano] = partes.map(Number);
+      if (!dia || !mes || !ano) return null;
+      return new Date(ano, mes - 1, dia);
+    }
+
+    function escapeHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    async function carregar() {
+      const conteudo = document.getElementById('conteudo');
+      const totalGeralEl = document.getElementById('totalGeral');
+
+      try {
+        const resposta = await fetch(WORKER_URL + 'todos');
+        const json = await resposta.json();
+
+        if (!json.success || !json.dados || json.dados.length === 0) {
+          conteudo.innerHTML = '<div class="vazio">Nenhum comprovante enviado ainda</div>';
+          totalGeralEl.textContent = formatarValor(0);
+          return;
+        }
+
+        // Agrupa por mês/ano
+        const grupos = {};
+        let totalGeral = 0;
+
+        for (const item of json.dados) {
+          const data = parseData(item.data);
+          const valorNum = parseValor(item.valor);
+          totalGeral += valorNum;
+
+          const chave = data ? data.getFullYear() + '-' + data.getMonth() : 'sem-data';
+          if (!grupos[chave]) {
+            grupos[chave] = {
+              titulo: data ? MESES[data.getMonth()] + ' de ' + data.getFullYear() : 'Sem data',
+              itens: [],
+              total: 0,
+              ordem: data ? data.getTime() : -Infinity,
+            };
+          }
+          grupos[chave].itens.push(item);
+          grupos[chave].total += valorNum;
+        }
+
+        totalGeralEl.textContent = formatarValor(totalGeral);
+
+        const gruposOrdenados = Object.values(grupos).sort((a, b) => b.ordem - a.ordem);
+
+        conteudo.innerHTML = gruposOrdenados
+          .map(
+            (grupo) => `
+          <div class="mes-titulo">
+            <span>${escapeHtml(grupo.titulo)}</span>
+            <span>${escapeHtml(formatarValor(grupo.total))}</span>
+          </div>
+          ${grupo.itens
+            .map(
+              (item) => `
+            <div class="card">
+              <div style="min-width:0;">
+                <div class="card-desc">${escapeHtml(item.descricao)}</div>
+                <div class="card-data">${escapeHtml(item.data)}</div>
+              </div>
+              <div class="card-valor">${escapeHtml(formatarValor(parseValor(item.valor)))}</div>
+            </div>
+          `
+            )
+            .join('')}
+        `
+          )
+          .join('');
+      } catch (err) {
+        conteudo.innerHTML = '<div class="erro">Não foi possível carregar o relatório</div>';
+      }
+    }
+
+    carregar();
+  </script>
+</body>
+</html>

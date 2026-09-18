@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Erro ao receber comprovante</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      text-align: center;
+      padding: 48px 24px;
+      color: #1a1a1a;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 26px; color: #dc3545; }
+    a { display: inline-block; margin-top: 24px; color: #0d6efd; }
+    .detalhe {
+      background: #f4f6fa;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #555;
+      text-align: left;
+      margin-top: 20px;
+      word-break: break-word;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚠️ Algo deu errado</h1>
+  <p>Não foi possível processar o arquivo compartilhado. Tente novamente.</p>
+  <div class="detalhe" id="detalhe"></div>
+  <a href="index.html">← Voltar</a>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const motivo = params.get('motivo');
+    if (motivo) {
+      const el = document.getElementById('detalhe');
+      el.textContent = 'Detalhe técnico: ' + motivo;
+      el.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
