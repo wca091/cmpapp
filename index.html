@@ -273,8 +273,8 @@
       <div class="carregando">Carregando...</div>
     </div>
 
-    <input type="file" id="inputArquivo" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" style="display:none;" />
-    <button id="btnEnviarArquivo" class="cta" style="border:none; width:100%; cursor:pointer;">📤 Enviar comprovante</button>
+    <input type="file" id="inputArquivo" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple style="display:none;" />
+    <button id="btnEnviarArquivo" class="cta" style="border:none; width:100%; cursor:pointer;">📤 Enviar comprovante(s)</button>
     <p id="statusEnvio" style="text-align:center; font-size:13px; color:#555; margin-top:8px;"></p>
 
     <a href="relatorio.html" class="cta" style="background:#fff; color:#0d6efd; border:1px solid #0d6efd; margin-top:10px;">📊 Ver relatório completo</a>
@@ -413,33 +413,56 @@
     btnEnviarArquivo.addEventListener('click', () => inputArquivo.click());
 
     inputArquivo.addEventListener('change', async () => {
-      const arquivo = inputArquivo.files[0];
-      if (!arquivo) return;
+      const arquivos = Array.from(inputArquivo.files);
+      if (arquivos.length === 0) return;
 
       btnEnviarArquivo.disabled = true;
-      btnEnviarArquivo.textContent = 'Enviando...';
-      statusEnvio.textContent = 'Lendo o comprovante, aguarde alguns segundos...';
 
-      try {
-        const formData = new FormData();
-        formData.append('comprovante', arquivo, arquivo.name);
+      let sucesso = 0;
+      let falha = 0;
+      const erros = [];
 
-        const resposta = await fetch(WORKER_URL, { method: 'POST', body: formData });
-        const json = await resposta.json();
+      for (let i = 0; i < arquivos.length; i++) {
+        const arquivo = arquivos[i];
+        btnEnviarArquivo.textContent = `Enviando ${i + 1} de ${arquivos.length}...`;
+        statusEnvio.textContent = `Lendo "${arquivo.name}" (${i + 1}/${arquivos.length})...`;
 
-        if (json.success) {
-          statusEnvio.textContent = '✅ Registrado: ' + json.data.descricao + ' — R$ ' + json.data.valor;
-          carregarHistorico();
-        } else {
-          statusEnvio.textContent = '❌ Erro: ' + (json.error || 'desconhecido');
+        try {
+          const formData = new FormData();
+          formData.append('comprovante', arquivo, arquivo.name);
+
+          const resposta = await fetch(WORKER_URL, { method: 'POST', body: formData });
+          const json = await resposta.json();
+
+          if (json.success) {
+            sucesso++;
+          } else {
+            falha++;
+            erros.push(arquivo.name + ': ' + (json.error || 'desconhecido'));
+          }
+        } catch (err) {
+          falha++;
+          erros.push(arquivo.name + ': ' + err.message);
         }
-      } catch (err) {
-        statusEnvio.textContent = '❌ Erro de conexão: ' + err.message;
-      } finally {
-        btnEnviarArquivo.disabled = false;
-        btnEnviarArquivo.textContent = '📤 Enviar comprovante';
-        inputArquivo.value = '';
+
+        // Pequena pausa entre envios, pra não estourar o limite de pedidos por minuto da IA
+        if (i < arquivos.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 4000));
+        }
       }
+
+      if (falha === 0) {
+        statusEnvio.textContent = `✅ ${sucesso} comprovante(s) registrado(s) com sucesso!`;
+      } else {
+        statusEnvio.innerHTML =
+          `✅ ${sucesso} registrado(s), ❌ ${falha} com erro:<br>` +
+          erros.map((e) => '• ' + escapeHtml(e)).join('<br>');
+      }
+
+      carregarHistorico();
+      btnEnviarArquivo.disabled = false;
+      btnEnviarArquivo.textContent = '📤 Enviar comprovante(s)';
+      inputArquivo.value = '';
     });
 
     // --- Histórico ---
