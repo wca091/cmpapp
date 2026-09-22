@@ -275,6 +275,11 @@
 
     <input type="file" id="inputArquivo" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple style="display:none;" />
     <button id="btnEnviarArquivo" class="cta" style="border:none; width:100%; cursor:pointer;">📤 Enviar comprovante(s)</button>
+
+    <div id="areaColar" tabindex="0" style="margin-top:10px; border:2px dashed #d0d5dd; border-radius:10px; padding:16px; text-align:center; color:#888; font-size:13px; cursor:text; outline:none;">
+      📋 Clique aqui e cole uma imagem copiada (Ctrl+V)
+    </div>
+
     <p id="statusEnvio" style="text-align:center; font-size:13px; color:#555; margin-top:8px;"></p>
 
     <a href="relatorio.html" class="cta" style="background:#fff; color:#0d6efd; border:1px solid #0d6efd; margin-top:10px;">📊 Ver relatório completo</a>
@@ -409,12 +414,35 @@
     const inputArquivo = document.getElementById('inputArquivo');
     const btnEnviarArquivo = document.getElementById('btnEnviarArquivo');
     const statusEnvio = document.getElementById('statusEnvio');
+    const areaColar = document.getElementById('areaColar');
 
     btnEnviarArquivo.addEventListener('click', () => inputArquivo.click());
 
-    inputArquivo.addEventListener('change', async () => {
-      const arquivos = Array.from(inputArquivo.files);
-      if (arquivos.length === 0) return;
+    inputArquivo.addEventListener('change', () => {
+      enviarArquivos(Array.from(inputArquivo.files));
+      inputArquivo.value = '';
+    });
+
+    // --- Colar imagem copiada (Ctrl+V), igual o "colar imagem" do Google ---
+    areaColar.addEventListener('click', () => areaColar.focus());
+
+    areaColar.addEventListener('paste', (evento) => {
+      const itens = evento.clipboardData ? Array.from(evento.clipboardData.items) : [];
+      const arquivosColados = itens
+        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+
+      if (arquivosColados.length === 0) {
+        statusEnvio.textContent = '⚠️ Não encontrei nenhuma imagem na área de transferência. Copie um print e tente colar de novo.';
+        return;
+      }
+
+      enviarArquivos(arquivosColados);
+    });
+
+    async function enviarArquivos(arquivos) {
+      if (!arquivos || arquivos.length === 0) return;
 
       btnEnviarArquivo.disabled = true;
 
@@ -424,12 +452,13 @@
 
       for (let i = 0; i < arquivos.length; i++) {
         const arquivo = arquivos[i];
+        const nomeArquivo = arquivo.name || 'imagem-colada.png';
         btnEnviarArquivo.textContent = `Enviando ${i + 1} de ${arquivos.length}...`;
-        statusEnvio.textContent = `Lendo "${arquivo.name}" (${i + 1}/${arquivos.length})...`;
+        statusEnvio.textContent = `Lendo "${nomeArquivo}" (${i + 1}/${arquivos.length})...`;
 
         try {
           const formData = new FormData();
-          formData.append('comprovante', arquivo, arquivo.name);
+          formData.append('comprovante', arquivo, nomeArquivo);
 
           const resposta = await fetch(WORKER_URL, { method: 'POST', body: formData });
           const json = await resposta.json();
@@ -438,11 +467,11 @@
             sucesso++;
           } else {
             falha++;
-            erros.push(arquivo.name + ': ' + (json.error || 'desconhecido'));
+            erros.push(nomeArquivo + ': ' + (json.error || 'desconhecido'));
           }
         } catch (err) {
           falha++;
-          erros.push(arquivo.name + ': ' + err.message);
+          erros.push(nomeArquivo + ': ' + err.message);
         }
 
         // Pequena pausa entre envios, pra não estourar o limite de pedidos por minuto da IA
@@ -462,8 +491,7 @@
       carregarHistorico();
       btnEnviarArquivo.disabled = false;
       btnEnviarArquivo.textContent = '📤 Enviar comprovante(s)';
-      inputArquivo.value = '';
-    });
+    }
 
     // --- Histórico ---
     function formatarValorExibicao(valor) {
