@@ -181,6 +181,18 @@
 
         totalGeralEl.textContent = formatarValor(totalGeral);
 
+        // Dentro de cada mês, ordena os lançamentos pela data real (do mais antigo pro
+        // mais novo) — assim, um comprovante enviado atrasado (de um dia anterior) aparece
+        // no lugar certo, mesmo tendo sido adicionado depois na planilha.
+        for (const grupo of Object.values(grupos)) {
+          grupo.itens.sort((a, b) => {
+            const dataA = parseData(a.data);
+            const dataB = parseData(b.data);
+            if (!dataA || !dataB) return 0;
+            return dataA - dataB;
+          });
+        }
+
         const gruposOrdenados = Object.values(grupos).sort((a, b) => b.ordem - a.ordem);
 
         conteudo.innerHTML = gruposOrdenados
