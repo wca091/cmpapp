@@ -16,13 +16,16 @@
       background: #f4f6fa;
       max-width: 480px;
       margin-inline: auto;
-      padding-bottom: 48px;
+      padding-bottom: 90px;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .topo {
       display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 16px;
+      position: relative;
     }
     .voltar {
       text-decoration: none;
@@ -34,7 +37,50 @@
       font-size: 17px;
       font-weight: 600;
       margin: 0;
+      flex: 1;
     }
+    .btn-menu {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #444;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+    .link-cancelar {
+      color: #0d6efd;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+    }
+    .menu-dropdown {
+      position: absolute;
+      top: 34px;
+      right: 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      overflow: hidden;
+      display: none;
+      z-index: 20;
+    }
+    .menu-dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 12px 18px;
+      background: #fff;
+      border: none;
+      font-size: 14px;
+      color: #1a1a1a;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .menu-dropdown button:active { background: #f4f6fa; }
+
     .resumo {
       background: #0d6efd;
       border-radius: 14px;
@@ -42,15 +88,9 @@
       color: #fff;
       margin-bottom: 20px;
     }
-    .resumo-label {
-      font-size: 13px;
-      opacity: 0.85;
-    }
-    .resumo-valor {
-      font-size: 28px;
-      font-weight: 700;
-      margin-top: 4px;
-    }
+    .resumo-label { font-size: 13px; opacity: 0.85; }
+    .resumo-valor { font-size: 28px; font-weight: 700; margin-top: 4px; }
+
     .mes-titulo {
       font-size: 13px;
       font-weight: 600;
@@ -61,16 +101,40 @@
       display: flex;
       justify-content: space-between;
     }
+
+    /* --- Item com suporte a arrastar pra excluir --- */
+    .item-wrap {
+      position: relative;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .item-fundo {
+      position: absolute;
+      inset: 0;
+      background: #dc3545;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      gap: 6px;
+    }
     .card {
+      position: relative;
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       padding: 13px 14px;
-      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
+      touch-action: pan-y;
+      transition: transform 0.2s ease;
+      z-index: 1;
     }
     .card-desc {
       font-size: 14px;
@@ -78,29 +142,71 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .card-data {
-      font-size: 12px;
-      color: #888;
-      margin-top: 2px;
+    .card-data { font-size: 12px; color: #888; margin-top: 2px; }
+    .card-valor { font-size: 14px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+    /* --- Círculo de seleção (modo selecionar) --- */
+    .selo-selecao {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #c7ccd6;
+      flex-shrink: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #fff;
+      background: #fff;
     }
-    .card-valor {
+    body.modo-selecao .selo-selecao { display: flex; }
+    body.modo-selecao .card { touch-action: auto; cursor: pointer; }
+    .item-wrap.selecionado .selo-selecao {
+      background: #0d6efd;
+      border-color: #0d6efd;
+    }
+    .item-wrap.selecionado .card { background: #eaf2ff; }
+
+    .carregando, .erro, .vazio { text-align: center; color: #888; font-size: 13px; padding: 40px 0; }
+
+    /* --- Barra inferior de exclusão em lote --- */
+    .barra-excluir {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 480px;
+      margin: 0 auto;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+    }
+    body.modo-selecao .barra-excluir { display: flex; }
+    .barra-excluir span { font-size: 14px; color: #444; }
+    .barra-excluir button {
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
       font-size: 14px;
       font-weight: 600;
-      white-space: nowrap;
-      flex-shrink: 0;
+      cursor: pointer;
     }
-    .carregando, .erro, .vazio {
-      text-align: center;
-      color: #888;
-      font-size: 13px;
-      padding: 40px 0;
-    }
+    .barra-excluir button:disabled { background: #e5a2ab; cursor: default; }
   </style>
 </head>
 <body>
   <div class="topo">
     <a href="index.html" class="voltar">←</a>
     <p class="titulo">Relatório completo</p>
+    <span class="link-cancelar" id="linkCancelar">Cancelar</span>
+    <button class="btn-menu" id="btnMenu">⋮</button>
+    <div class="menu-dropdown" id="menuDropdown">
+      <button id="btnSelecionar">Selecionar</button>
+    </div>
   </div>
 
   <div class="resumo">
@@ -110,6 +216,11 @@
 
   <div id="conteudo">
     <div class="carregando">Carregando lançamentos...</div>
+  </div>
+
+  <div class="barra-excluir">
+    <span id="textoSelecionados">0 selecionado(s)</span>
+    <button id="btnExcluirSelecionados" disabled>Excluir</button>
   </div>
 
   <script>
@@ -143,10 +254,19 @@
       return div.innerHTML;
     }
 
-    async function carregar() {
-      const conteudo = document.getElementById('conteudo');
-      const totalGeralEl = document.getElementById('totalGeral');
+    const conteudo = document.getElementById('conteudo');
+    const totalGeralEl = document.getElementById('totalGeral');
+    const btnMenu = document.getElementById('btnMenu');
+    const menuDropdown = document.getElementById('menuDropdown');
+    const btnSelecionar = document.getElementById('btnSelecionar');
+    const linkCancelar = document.getElementById('linkCancelar');
+    const textoSelecionados = document.getElementById('textoSelecionados');
+    const btnExcluirSelecionados = document.getElementById('btnExcluirSelecionados');
 
+    const LARGURA_SWIPE = 90; // px que o card desliza pra revelar o "Excluir"
+    let cardAberto = null; // item-wrap atualmente arrastado/aberto
+
+    async function carregar() {
       try {
         const resposta = await fetch(WORKER_URL + 'todos');
         const json = await resposta.json();
@@ -157,7 +277,6 @@
           return;
         }
 
-        // Agrupa por mês/ano
         const grupos = {};
         let totalGeral = 0;
 
@@ -181,9 +300,8 @@
 
         totalGeralEl.textContent = formatarValor(totalGeral);
 
-        // Dentro de cada mês, ordena os lançamentos pela data real (do mais antigo pro
-        // mais novo) — assim, um comprovante enviado atrasado (de um dia anterior) aparece
-        // no lugar certo, mesmo tendo sido adicionado depois na planilha.
+        // Dentro de cada mês, ordena pela data real — assim um comprovante
+        // atrasado (enviado depois, de um dia anterior) aparece no lugar certo.
         for (const grupo of Object.values(grupos)) {
           grupo.itens.sort((a, b) => {
             const dataA = parseData(a.data);
@@ -205,12 +323,16 @@
           ${grupo.itens
             .map(
               (item) => `
-            <div class="card">
-              <div style="min-width:0;">
-                <div class="card-desc">${escapeHtml(item.descricao)}</div>
-                <div class="card-data">${escapeHtml(item.data)}</div>
+            <div class="item-wrap" data-linha="${item.linha}">
+              <div class="item-fundo">🗑️ Excluir</div>
+              <div class="card">
+                <div style="min-width:0;">
+                  <div class="card-desc">${escapeHtml(item.descricao)}</div>
+                  <div class="card-data">${escapeHtml(item.data)}</div>
+                </div>
+                <div class="card-valor">${escapeHtml(formatarValor(parseValor(item.valor)))}</div>
+                <div class="selo-selecao">✓</div>
               </div>
-              <div class="card-valor">${escapeHtml(formatarValor(parseValor(item.valor)))}</div>
             </div>
           `
             )
@@ -218,9 +340,167 @@
         `
           )
           .join('');
+
+        ativarGestosDeSwipe();
       } catch (err) {
         conteudo.innerHTML = '<div class="erro">Não foi possível carregar o relatório</div>';
       }
+    }
+
+    // --- Menu "⋮" ---
+    btnMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menuDropdown.style.display = menuDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => { menuDropdown.style.display = 'none'; });
+
+    btnSelecionar.addEventListener('click', () => {
+      menuDropdown.style.display = 'none';
+      entrarModoSelecao();
+    });
+
+    linkCancelar.addEventListener('click', sairModoSelecao);
+
+    function entrarModoSelecao() {
+      fecharSwipeAberto();
+      document.body.classList.add('modo-selecao');
+      btnMenu.style.display = 'none';
+      linkCancelar.style.display = 'inline';
+      atualizarBarraSelecao();
+    }
+
+    function sairModoSelecao() {
+      document.body.classList.remove('modo-selecao');
+      btnMenu.style.display = 'inline';
+      linkCancelar.style.display = 'none';
+      document.querySelectorAll('.item-wrap.selecionado').forEach((el) => el.classList.remove('selecionado'));
+      atualizarBarraSelecao();
+    }
+
+    function atualizarBarraSelecao() {
+      const selecionados = document.querySelectorAll('.item-wrap.selecionado').length;
+      textoSelecionados.textContent = selecionados + ' selecionado(s)';
+      btnExcluirSelecionados.disabled = selecionados === 0;
+    }
+
+    // Clique num item: em modo seleção, alterna selecionado; fora do modo, ignora
+    // (o swipe já cuida da exclusão individual).
+    conteudo.addEventListener('click', (e) => {
+      if (!document.body.classList.contains('modo-selecao')) return;
+      const wrap = e.target.closest('.item-wrap');
+      if (!wrap) return;
+      wrap.classList.toggle('selecionado');
+      atualizarBarraSelecao();
+    });
+
+    btnExcluirSelecionados.addEventListener('click', async () => {
+      const selecionados = Array.from(document.querySelectorAll('.item-wrap.selecionado'));
+      const linhas = selecionados.map((el) => Number(el.dataset.linha));
+      if (linhas.length === 0) return;
+
+      btnExcluirSelecionados.disabled = true;
+      btnExcluirSelecionados.textContent = 'Excluindo...';
+
+      try {
+        await excluirNaPlanilha(linhas);
+        sairModoSelecao();
+        carregar();
+      } catch (err) {
+        alert('Erro ao excluir: ' + err.message);
+        btnExcluirSelecionados.disabled = false;
+        btnExcluirSelecionados.textContent = 'Excluir';
+      }
+    });
+
+    async function excluirNaPlanilha(linhas) {
+      const resposta = await fetch(WORKER_URL + 'excluir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linhas }),
+      });
+      const json = await resposta.json();
+      if (!json.success) throw new Error(json.error || 'desconhecido');
+    }
+
+    // --- Arrastar item pro lado (swipe) pra excluir individualmente ---
+    function fecharSwipeAberto() {
+      if (cardAberto) {
+        cardAberto.querySelector('.card').style.transform = 'translateX(0)';
+        cardAberto = null;
+      }
+    }
+
+    function ativarGestosDeSwipe() {
+      document.querySelectorAll('.item-wrap').forEach((wrap) => {
+        const card = wrap.querySelector('.card');
+        const fundo = wrap.querySelector('.item-fundo');
+        let startX = 0;
+        let startY = 0;
+        let deltaX = 0;
+        let arrastando = false;
+        let ehSwipeHorizontal = null;
+
+        card.addEventListener('touchstart', (e) => {
+          if (document.body.classList.contains('modo-selecao')) return;
+          if (cardAberto && cardAberto !== wrap) fecharSwipeAberto();
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          deltaX = wrap.classList.contains('aberto') ? -LARGURA_SWIPE : 0;
+          arrastando = true;
+          ehSwipeHorizontal = null;
+          card.style.transition = 'none';
+        }, { passive: true });
+
+        card.addEventListener('touchmove', (e) => {
+          if (!arrastando) return;
+          const x = e.touches[0].clientX;
+          const y = e.touches[0].clientY;
+          const dx = x - startX;
+          const dy = y - startY;
+
+          if (ehSwipeHorizontal === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+            ehSwipeHorizontal = Math.abs(dx) > Math.abs(dy);
+          }
+          if (!ehSwipeHorizontal) return;
+
+          e.preventDefault();
+          let novoDelta = deltaX + dx;
+          novoDelta = Math.min(5, Math.max(-LARGURA_SWIPE - 20, novoDelta));
+          card.style.transform = `translateX(${novoDelta}px)`;
+          card.dataset.deltaAtual = novoDelta;
+        }, { passive: false });
+
+        card.addEventListener('touchend', () => {
+          if (!arrastando) return;
+          arrastando = false;
+          card.style.transition = 'transform 0.2s ease';
+          const atual = Number(card.dataset.deltaAtual || 0);
+
+          if (atual < -LARGURA_SWIPE / 2) {
+            card.style.transform = `translateX(-${LARGURA_SWIPE}px)`;
+            wrap.classList.add('aberto');
+            cardAberto = wrap;
+          } else {
+            card.style.transform = 'translateX(0)';
+            wrap.classList.remove('aberto');
+            if (cardAberto === wrap) cardAberto = null;
+          }
+        });
+
+        // Toca no fundo vermelho ("Excluir") revelado pelo swipe
+        fundo.addEventListener('click', async () => {
+          const linha = Number(wrap.dataset.linha);
+          fundo.textContent = 'Excluindo...';
+          try {
+            await excluirNaPlanilha([linha]);
+            wrap.remove();
+          } catch (err) {
+            alert('Erro ao excluir: ' + err.message);
+            card.style.transform = 'translateX(0)';
+            wrap.classList.remove('aberto');
+          }
+        });
+      });
     }
 
     carregar();
