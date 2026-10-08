@@ -300,14 +300,15 @@
 
         totalGeralEl.textContent = formatarValor(totalGeral);
 
-        // Dentro de cada mês, ordena pela data real — assim um comprovante
-        // atrasado (enviado depois, de um dia anterior) aparece no lugar certo.
+        // Dentro de cada mês, o lançamento mais recente fica no topo (pela data real).
+        // Se houver vários no mesmo dia, o último a ser enviado aparece primeiro.
+        // Um comprovante atrasado (de um dia anterior) continua no lugar certo da data.
         for (const grupo of Object.values(grupos)) {
           grupo.itens.sort((a, b) => {
             const dataA = parseData(a.data);
             const dataB = parseData(b.data);
-            if (!dataA || !dataB) return 0;
-            return dataA - dataB;
+            if (dataA && dataB && dataA - dataB !== 0) return dataB - dataA;
+            return b.linha - a.linha;
           });
         }
 
